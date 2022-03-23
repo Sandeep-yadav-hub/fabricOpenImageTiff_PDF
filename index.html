@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <script src="./index.js"></script>
+    <script src="./fabric.js"></script>
+    <!-- <script src="./utiff.js"></script> -->
+    <!-- <script src="https://cdnjs.cloudflare.com/ajax/libs/fabric.js/3.6.2/fabric.min.js"></script>  -->
+    <script src="https://cdn.jsdelivr.net/npm/utif@3.1.0/UTIF.min.js"></script>
+    <!-- <script src="https://mozilla.github.io/pdf.js/build/pdf.js"></script> -->
+    <!-- <script src="https://mozilla.github.io/pdf.js/build/pdf.worker.js"></script> -->
+    <script src="./pdfworker.js"></script>
+    <script src="./pdfjsLib.js"></script>
+    <title>Document</title>
+</head>
+<style>
+    canvas {
+        border: 1px solid #999;
+    }
+</style>
+<body>
+   <img src="" alt="" id="mySrc" style="display: none;">
+    <canvas id="c" width="1000" height="1000"></canvas>
+    <button onclick="loadMockTiffImage()">convert tiff to img</button>
+    <button onclick="init()">init</button>
+    <button onclick="next()">next</button>
+    <button onclick="prev()">prev</button>
+    <p id="pages"></p>
+    <p id="totalpageNumber"></p>
+</body>
+<script>
+    pdfReader = window.pdfjsLib
+    pdfReader.workerSrc = window.pdfjsWorker;
+    var pageNumber = 1
+    var TotalpageNumber = 1
+    document.getElementById("pages").innerHTML = pageNumber
+    document.getElementById("totalpageNumber").innerHTML = TotalpageNumber
+
+    var loadingTask = pdfjsLib.getDocument("http://localhost:5500/test.pdf");
+    function next(){
+        pageNumber++
+        init()
+    }
+    function prev(){
+        pageNumber--
+        init()
+    }
+    const init = async() =>{
+        loadingTask.promise.then(function(pdf) {
+            console.log('PDF loaded');
+            // Fetch the first page
+            TotalpageNumber = pdf.numPages
+            document.getElementById("pages").innerHTML = pageNumber
+            document.getElementById("totalpageNumber").innerHTML = TotalpageNumber
+
+            pdf.getPage(pageNumber).then(function(page) {
+                console.log('Page loaded');
+                console.log(page)
+                var scale = 1.5;
+                var viewport = page.getViewport({scale: scale});
+
+                // Prepare canvas using PDF page dimensions
+                // var canvas = document.getElementById('c');
+                var canvas = document.createElement('canvas');
+                canvas.id="canvas"
+                var context = canvas.getContext('2d');
+                canvas.height = viewport.height;
+                canvas.width = viewport.width;
+
+                // Render PDF page into canvas context
+                var renderContext = {
+                    canvasContext: context,
+                    viewport: viewport
+                };
+                var renderTask = page.render(renderContext);
+                renderTask.promise.then(function () {
+                    console.log('Page rendered');
+                    loadf(canvas,viewport)
+                });
+            });
+        }, function (reason) {
+            // PDF loading error
+            console.error(reason);
+        });
+        function loadf(canvas,viewport){
+            var bg = canvas.toDataURL("image/png");
+            var canvas = new fabric.Canvas("c");
+            new fabric.Image.fromURL(bg, function (myImg) {
+                var img1 = myImg.set({ left: 0, top: 0, width: viewport.width, height: viewport.height });
+                canvas.add(img1);
+            });
+        }
+    }
+</script>
+</html>
